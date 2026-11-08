@@ -1,0 +1,23 @@
+# .gitignore for JarvisOS ISO Builder
+
+# Build outputs
+output/
+*.iso
+*.img
+
+# Docker artifacts
+.dockerignore
+
+# Temporary build files
+/tmp/
+/build/
+archlive/
+archiso-tmp/
+
+# OS specific
+.DS_Store
+Thumbs.db
+*~
+
+# Logs
+*.log
