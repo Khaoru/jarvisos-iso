@@ -1,0 +1,43 @@
+name: Build JarvisOS ISO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo rm -rf /usr/local/share/boost
+        df -h
+    
+    - name: Build ISO in Docker
+      run: |
+        docker build -t jarvisos-builder .
+        docker run --privileged -v $(pwd)/output:/output jarvisos-builder
+    
+    - name: Upload ISO
+      uses: actions/upload-artifact@v3
+      with:
+        name: jarvisos-iso
+        path: output/*.iso
+        retention-days: 7
+    
+    - name: Create Release
+      if: github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        files: output/*.iso
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
