@@ -1,0 +1,47 @@
+name: Build JarvisOS ISO
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/local/share/boost
+        df -h
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build ISO in Docker
+      run: |
+        docker build -t jarvisos-builder .
+        docker run --privileged -v $(pwd)/output:/home/builder/output jarvisos-builder
+    
+    - name: Upload ISO artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: jarvisos-iso
+        path: output/*.iso
+        retention-days: 7
+        if-no-files-found: error
+    
+    - name: Create Release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.0-${{ github.run_number }}
+        name: JarvisOS v1.0 Build ${{ github.run_number }}
+        files: output/*.iso
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
